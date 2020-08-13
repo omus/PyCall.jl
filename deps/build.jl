@@ -8,6 +8,8 @@
 using VersionParsing
 import Conda, Libdl
 
+const SUPPORTED_ARCHS = (:i686, :x86_64, :aarch64)
+
 struct UseCondaPython <: Exception end
 
 include("buildutils.jl")
@@ -43,7 +45,7 @@ mkpath(dirname(prefsfile))
 try # make sure deps.jl file is removed on error
     python = try
         let py = get(ENV, "PYTHON", isfile(prefsfile) ? readchomp(prefsfile) :
-                     (Sys.isunix() && !Sys.isapple()) || Sys.ARCH ∉ (:i686, :x86_64) ?
+                     (Sys.isunix() && !Sys.isapple()) || Sys.ARCH ∉ SUPPORTED_ARCHS ?
                      whichfirst("python3", "python") : "Conda"),
             vers = isempty(py) || py == "Conda" ? v"0.0" : vparse(pyconfigvar(py,"VERSION","0.0"))
             if vers < v"2.7"
@@ -64,7 +66,7 @@ try # make sure deps.jl file is removed on error
             py
         end
     catch e1
-        if Sys.ARCH in (:i686, :x86_64)
+        if Sys.ARCH in SUPPORTED_ARCHS
             if isa(e1, UseCondaPython)
                 @info string("Using the Python distribution in the Conda package by default.\n",
                      "To use a different Python version, set ENV[\"PYTHON\"]=\"pythoncommand\" and re-run Pkg.build(\"PyCall\").")
